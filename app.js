@@ -1,13 +1,13 @@
 require('dotenv').config();
-//And we don't need ever it again.It will be active and running and all we need to do now is to define our environment variable.
-//Always on top
 
 const express = require("express");
 const ejs = require("ejs");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 
-const md5 = require("md5");
+const bcrypt = require("bcrypt");
+const saltRounds = 10;
+
 
 const app = express();
 
@@ -39,9 +39,12 @@ app.get("/register", function (req, res) {
 });
 app.post("/register", function (req, res) {
 
+
+    const hash = bcrypt.hashSync(req.body.password, saltRounds);
+
     const newUser = new User({
         email: req.body.username,
-        password: md5(req.body.password)
+        password: hash
     });
     newUser.save(function (err) {
         if (err) {
@@ -56,7 +59,7 @@ app.post("/register", function (req, res) {
 
 app.post("/login", function (req, res) {
     const username = req.body.username;
-    const password = md5(req.body.password);
+    const password = req.body.password;
 
     User.findOne({ email: username }, function (err, foundUser) {
 
@@ -65,7 +68,7 @@ app.post("/login", function (req, res) {
         }
         else {
             if (foundUser) {
-                if (foundUser.password === password) {
+                if (bcrypt.compareSync(password, foundUser.password)) {
                     res.render("secrets");
                 }
             }
